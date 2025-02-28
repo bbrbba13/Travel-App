@@ -15,23 +15,23 @@ const PackingApp = () => {
   const [weatherData, setWeatherData] = useState(null);
   const [packingList, setPackingList] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  
+
   // Ref for the suggestions dropdown
   const suggestionsRef = useRef(null);
 
   // Search cities using Mapbox Geocoding API with CORS handling
   const searchCities = async (query) => {
     if (query.length < 2) return [];
-    
+
     try {
       const MAPBOX_API_KEY = 'pk.eyJ1IjoiYmJyYmJhMTMiLCJhIjoiY203bzBqNThyMDZ4cjJzb2hicGpteWtzbyJ9.17_6m0uEnSO2eNeCD8d1bg';
-      
+
       // Use a specific endpoint with json format explicitly stated
       const geocodingUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_API_KEY}&types=place&limit=10`;
-      
+
       console.log('Searching for:', query);
       console.log('Using API URL:', geocodingUrl);
-      
+
       // Make the API request with specific headers and cache control
       const response = await fetch(geocodingUrl, {
         method: 'GET',
@@ -45,41 +45,41 @@ const PackingApp = () => {
         redirect: 'follow',
         referrerPolicy: 'no-referrer'
       });
-      
+
       if (!response.ok) {
         throw new Error(`API error: ${response.status}`);
       }
-      
+
       const data = await response.json();
       console.log('API response received:', data);
-      
+
       if (data && data.features && data.features.length > 0) {
         console.log(`Found ${data.features.length} cities`);
-        
+
         return data.features.map(feature => {
           // Use the place_name property which is already formatted nicely
           return feature.place_name;
         });
       }
-      
+
       console.log('No results from API');
       return [];
-      
+
     } catch (error) {
       console.error('API error details:', error);
       return [];
     }
   };
-  
+
   // Handle destination input change
   const handleDestinationChange = (e) => {
     const value = e.target.value;
     setDestination(value);
-    
+
     if (value.length >= 2) {
       setShowSuggestions(true);
       setSearchLoading(true);
-      
+
       // Debounce API calls
       clearTimeout(window.searchTimeout);
       window.searchTimeout = setTimeout(async () => {
@@ -111,7 +111,7 @@ const PackingApp = () => {
         setShowSuggestions(false);
       }
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -211,7 +211,7 @@ const PackingApp = () => {
         const avgHigh = weatherData.reduce((sum, day) => sum + day.high, 0) / weatherData.length;
         const avgLow = weatherData.reduce((sum, day) => sum + day.low, 0) / weatherData.length;
         const hasRain = weatherData.some(day => day.conditions.includes('Rain'));
-        
+
         if (avgHigh > 80) {
           weatherItems.push(
             { name: 'Shorts', category: 'Clothing' },
@@ -255,7 +255,7 @@ const PackingApp = () => {
             { name: 'Winter boots', category: 'Footwear' }
           );
         }
-        
+
         if (avgLow < 35) {
           weatherItems.push(
             { name: 'Heavy coat', category: 'Clothing' },
@@ -264,7 +264,7 @@ const PackingApp = () => {
             { name: 'Insulated gloves', category: 'Accessories' }
           );
         }
-        
+
         if (hasRain) {
           weatherItems.push(
             { name: 'Umbrella', category: 'Accessories' },
@@ -276,11 +276,11 @@ const PackingApp = () => {
 
       // Activity-based recommendations
       const activityItems = [];
-      
+
       // Process each activity
       activities.forEach(activity => {
         const activityLower = activity.toLowerCase();
-        
+
         // Golf
         if (activityLower.includes('golf')) {
           activityItems.push(
@@ -294,7 +294,7 @@ const PackingApp = () => {
             { name: 'Sunscreen', category: 'Toiletries' }
           );
         }
-        
+
         // Hiking
         if (activityLower.includes('hik') || activityLower.includes('trek')) {
           activityItems.push(
@@ -308,7 +308,7 @@ const PackingApp = () => {
             { name: 'Sunscreen', category: 'Toiletries' }
           );
         }
-        
+
         // Beach/Swimming
         if (activityLower.includes('beach') || activityLower.includes('swim')) {
           activityItems.push(
@@ -319,7 +319,7 @@ const PackingApp = () => {
             { name: 'Sunglasses', category: 'Accessories' }
           );
         }
-        
+
         // Formal Dinner
         if (activityLower.includes('dinner') || activityLower.includes('formal')) {
           activityItems.push(
@@ -329,7 +329,7 @@ const PackingApp = () => {
             { name: 'Cologne/Perfume', category: 'Toiletries' }
           );
         }
-        
+
         // Business Meeting
         if (activityLower.includes('business') || activityLower.includes('meeting')) {
           activityItems.push(
@@ -344,19 +344,19 @@ const PackingApp = () => {
 
       // Duration-based quantity suggestions
       const days = Math.floor((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1;
-      
+
       // Combine all items (removing duplicates by name)
       const allItems = [...baseItems, ...weatherItems, ...activityItems];
       const uniqueItems = [];
       const itemNames = new Set();
-      
+
       allItems.forEach(item => {
         if (!itemNames.has(item.name)) {
           itemNames.add(item.name);
           uniqueItems.push(item);
         }
       });
-      
+
       // Add quantities for clothing items
       const finalList = uniqueItems.map(item => {
         if (item.name === 'Underwear' || item.name === 'Socks') {
@@ -367,7 +367,7 @@ const PackingApp = () => {
         }
         return { ...item, quantity: 1 };
       });
-      
+
       setPackingList(finalList);
       setIsGenerating(false);
       setCurrentStep(4);
@@ -380,7 +380,7 @@ const PackingApp = () => {
       <header className="px-4 py-4 bg-blue-600 text-white">
         <h1 className="text-xl font-bold">PackAI - Smart Travel Packing</h1>
       </header>
-      
+
       {/* Main content */}
       <main className="flex-1 p-4 overflow-auto">
         {/* Step 1: Trip Details */}
@@ -390,7 +390,7 @@ const PackingApp = () => {
               <MapPin className="mr-2" size={20} />
               Trip Details
             </h2>
-            
+
             <div className="space-y-3">
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-700">Destination</label>
@@ -405,7 +405,7 @@ const PackingApp = () => {
                   />
                   <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                 </div>
-                
+
                 {/* Suggestions dropdown */}
                 {showSuggestions && (
                   <div 
@@ -417,4 +417,27 @@ const PackingApp = () => {
                         <div
                           key={index}
                           className="p-2 hover:bg-blue-50 cursor-pointer"
-                          on
+                          onClick={() => selectSuggestion(city)}
+                        >
+                          {city}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-2 text-gray-500">No suggestions</div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Start Date</label>
+                <input
+                  type="date"
+                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label
