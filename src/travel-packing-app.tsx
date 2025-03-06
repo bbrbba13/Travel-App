@@ -40,7 +40,6 @@ const PackingApp: React.FC = () => {
   const [newActivity, setNewActivity] = useState<string>('');
   const [weatherData, setWeatherData] = useState<WeatherDay[] | null>(null);
   const [packingList, setPackingList] = useState<PackingItem[]>([]);
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
   // Ref for the suggestions dropdown and timeout
   const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -184,7 +183,6 @@ const PackingApp: React.FC = () => {
 
   // Generate mock weather data
   const generateWeatherData = (): void => {
-    setIsGenerating(true);
     const start = getLocalDate(startDate);
     const end = getLocalDate(endDate);
     const days = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
@@ -204,13 +202,10 @@ const PackingApp: React.FC = () => {
       };
     });
     setWeatherData(mockWeather);
-    setIsGenerating(false);
   };
 
   // Generate packing list based on weather and activities
   const generatePackingList = (): void => {
-    setIsGenerating(true);
-    
     // Calculate trip duration
     const start = getLocalDate(startDate);
     const end = getLocalDate(endDate);
@@ -362,7 +357,6 @@ const PackingApp: React.FC = () => {
     });
 
     setPackingList(Array.from(itemMap.values()));
-    setIsGenerating(false);
   };
 
   return (
