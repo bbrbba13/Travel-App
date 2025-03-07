@@ -232,8 +232,61 @@ const PackingApp: React.FC = () => {
         throw new Error('Weather data not available');
       }
 
-      // Rest of the existing fetchWeatherData function...
-      // ... existing code ...
+      const start = getLocalDate(startDate);
+      const end = getLocalDate(endDate);
+      const days = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+      const weatherMap = new Map<string, WeatherDay>();
+
+      // Group forecast data by day
+      forecastData.list.forEach((item: any) => {
+        const date = new Date(item.dt * 1000);
+        const dateStr = date.toLocaleDateString(undefined, {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric'
+        });
+
+        if (!weatherMap.has(dateStr)) {
+          weatherMap.set(dateStr, {
+            date: dateStr,
+            high: item.main.temp_max,
+            low: item.main.temp_min,
+            conditions: item.weather[0].main,
+            icon: item.weather[0].icon
+          });
+        } else {
+          const existing = weatherMap.get(dateStr)!;
+          existing.high = Math.max(existing.high, item.main.temp_max);
+          existing.low = Math.min(existing.low, item.main.temp_min);
+        }
+      });
+
+      // Convert the weather map to an array
+      const weatherData = Array.from(weatherMap.values());
+
+      // If trip is longer than available forecast, estimate remaining days
+      if (days > weatherData.length) {
+        const lastDay = weatherData[weatherData.length - 1];
+        for (let i = weatherData.length; i < days; i++) {
+          const date = new Date(start);
+          date.setDate(date.getDate() + i);
+          weatherData.push({
+            date: date.toLocaleDateString(undefined, {
+              weekday: 'short',
+              month: 'short',
+              day: 'numeric'
+            }),
+            high: lastDay.high,
+            low: lastDay.low,
+            conditions: lastDay.conditions,
+            icon: lastDay.icon
+          });
+        }
+      }
+
+      return weatherData;
+
     } catch (error) {
       console.error('Error fetching weather data:', error);
       throw error;
