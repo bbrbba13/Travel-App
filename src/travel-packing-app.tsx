@@ -18,6 +18,7 @@ interface WeatherDay {
   high: number;
   low: number;
   conditions: string;
+  icon: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
