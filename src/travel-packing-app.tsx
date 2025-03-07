@@ -403,6 +403,17 @@ const PackingApp: React.FC = () => {
     setPackingList(Array.from(itemMap.values()));
   };
 
+  // Add reset function
+  const handleReset = (): void => {
+    setDestination('');
+    setStartDate('');
+    setEndDate('');
+    setActivities([]);
+    setWeatherData(null);
+    setPackingList([]);
+    setCurrentStep(1);
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <header className="px-4 py-4 bg-blue-600 text-white">
@@ -600,12 +611,14 @@ const PackingApp: React.FC = () => {
                 <Luggage className="mr-2" size={20} />
                 Packing List
               </h2>
-              <button
-                onClick={handleBackStep}
-                className="text-blue-600 hover:text-blue-800"
-              >
-                Back
-              </button>
+              <div className="space-x-4">
+                <button
+                  onClick={handleBackStep}
+                  className="text-blue-600 hover:text-blue-800"
+                >
+                  Back
+                </button>
+              </div>
             </div>
 
             <div className="space-y-6">
@@ -627,6 +640,15 @@ const PackingApp: React.FC = () => {
                   </div>
                 </div>
               ))}
+            </div>
+
+            <div className="mt-8 flex justify-center">
+              <button
+                onClick={handleReset}
+                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Start New Packing List
+              </button>
             </div>
           </div>
         )}
