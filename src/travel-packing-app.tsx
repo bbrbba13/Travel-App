@@ -235,53 +235,62 @@ const PackingApp: React.FC = () => {
 
       const start = getLocalDate(startDate);
       const end = getLocalDate(endDate);
-      const days = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      
+      // Reset hours to compare dates properly
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
 
       const weatherMap = new Map<string, WeatherDay>();
 
-      // Group forecast data by day
+      // Group forecast data by day and filter by date range
       forecastData.list.forEach((item: any) => {
         const date = new Date(item.dt * 1000);
-        const dateStr = date.toLocaleDateString(undefined, {
-          weekday: 'short',
-          month: 'short',
-          day: 'numeric'
-        });
-
-        if (!weatherMap.has(dateStr)) {
-          weatherMap.set(dateStr, {
-            date: dateStr,
-            high: item.main.temp_max,
-            low: item.main.temp_min,
-            conditions: item.weather[0].main,
-            icon: item.weather[0].icon
+        
+        // Only process if date is within range
+        if (date >= start && date <= end) {
+          const dateStr = date.toLocaleDateString(undefined, {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric'
           });
-        } else {
-          const existing = weatherMap.get(dateStr)!;
-          existing.high = Math.max(existing.high, item.main.temp_max);
-          existing.low = Math.min(existing.low, item.main.temp_min);
+
+          if (!weatherMap.has(dateStr)) {
+            weatherMap.set(dateStr, {
+              date: dateStr,
+              high: item.main.temp_max,
+              low: item.main.temp_min,
+              conditions: item.weather[0].main,
+              icon: item.weather[0].icon
+            });
+          } else {
+            const existing = weatherMap.get(dateStr)!;
+            existing.high = Math.max(existing.high, item.main.temp_max);
+            existing.low = Math.min(existing.low, item.main.temp_min);
+          }
         }
       });
 
-      // Convert the weather map to an array
+      // Convert the weather map to an array and sort by date
       const weatherData = Array.from(weatherMap.values());
-
-      // If trip is longer than available forecast, estimate remaining days
-      if (days > weatherData.length) {
-        const lastDay = weatherData[weatherData.length - 1];
+      
+      // If we don't have data for all days (API limitation), fill in the gaps
+      const days = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      
+      if (weatherData.length < days) {
+        const lastKnownDay = weatherData[weatherData.length - 1];
         for (let i = weatherData.length; i < days; i++) {
-          const date = new Date(start);
-          date.setDate(date.getDate() + i);
+          const currentDate = new Date(start);
+          currentDate.setDate(start.getDate() + i);
           weatherData.push({
-            date: date.toLocaleDateString(undefined, {
+            date: currentDate.toLocaleDateString(undefined, {
               weekday: 'short',
               month: 'short',
               day: 'numeric'
             }),
-            high: lastDay.high,
-            low: lastDay.low,
-            conditions: lastDay.conditions,
-            icon: lastDay.icon
+            high: lastKnownDay ? lastKnownDay.high : 70, // fallback temperature if no data
+            low: lastKnownDay ? lastKnownDay.low : 50,
+            conditions: lastKnownDay ? lastKnownDay.conditions : 'Partly Cloudy',
+            icon: lastKnownDay ? lastKnownDay.icon : '02d'
           });
         }
       }
