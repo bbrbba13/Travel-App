@@ -151,7 +151,7 @@ const PackingApp: React.FC = () => {
   const handleNextStep = (): void => {
     if (currentStep === 1 && destination && startDate && endDate) {
       setCurrentStep(2);
-    } else if (currentStep === 2 && activities.length > 0) {
+    } else if (currentStep === 2) {
       generateWeatherData();
       setCurrentStep(3);
     } else if (currentStep === 3) {
@@ -204,149 +204,193 @@ const PackingApp: React.FC = () => {
     setWeatherData(mockWeather);
   };
 
-  // Generate packing list based on weather and activities
+  // Helper function to analyze weather patterns
+  const analyzeWeather = (weatherData: WeatherDay[]) => {
+    const avgHigh = weatherData.reduce((sum, day) => sum + day.high, 0) / weatherData.length;
+    const avgLow = weatherData.reduce((sum, day) => sum + day.low, 0) / weatherData.length;
+    const hasRain = weatherData.some(day => day.conditions.includes('Rain'));
+    const tempVariation = Math.max(...weatherData.map(day => day.high)) - Math.min(...weatherData.map(day => day.low));
+    
+    return {
+      avgHigh,
+      avgLow,
+      hasRain,
+      tempVariation,
+      isHot: avgHigh > 80,
+      isMild: avgHigh >= 60 && avgHigh <= 80,
+      isCool: avgLow < 60 && avgLow >= 40,
+      isCold: avgLow < 40,
+      needsLayering: tempVariation > 20
+    };
+  };
+
+  // AI-driven packing list generation
   const generatePackingList = (): void => {
-    // Calculate trip duration
     const start = getLocalDate(startDate);
     const end = getLocalDate(endDate);
     const tripDays = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    
+    if (!weatherData) return;
+    
+    const weather = analyzeWeather(weatherData);
+    const items: PackingItem[] = [];
 
-    const baseItems: PackingItem[] = [
-      // Essential Documents & Money
-      { name: 'Passport/ID', category: 'Documents & Money', quantity: 1 },
-      { name: 'Credit/Debit Cards', category: 'Documents & Money', quantity: 1 },
-      { name: 'Travel Insurance Documents', category: 'Documents & Money', quantity: 1 },
-      
-      // Electronics
-      { name: 'Phone + Charger', category: 'Electronics', quantity: 1 },
-      { name: 'Power Bank', category: 'Electronics', quantity: 1 },
-      { name: 'Universal Power Adapter', category: 'Electronics', quantity: 1 },
-      
-      // Basic Clothing (based on trip duration)
-      { name: 'Underwear', category: 'Clothing', quantity: tripDays + 1 }, // Extra day just in case
-      { name: 'Socks', category: 'Clothing', quantity: tripDays + 1 },
-      { name: 'T-shirts/Casual tops', category: 'Clothing', quantity: Math.ceil(tripDays / 2) },
-      { name: 'Pants/Shorts', category: 'Clothing', quantity: Math.ceil(tripDays / 3) },
-      
-      // Toiletries
-      { name: 'Toothbrush', category: 'Toiletries', quantity: 1 },
-      { name: 'Toothpaste', category: 'Toiletries', quantity: 1 },
-      { name: 'Deodorant', category: 'Toiletries', quantity: 1 },
-      { name: 'Shampoo/Conditioner', category: 'Toiletries', quantity: 1 },
-      { name: 'Body Wash', category: 'Toiletries', quantity: 1 },
-      { name: 'Hair Brush/Comb', category: 'Toiletries', quantity: 1 },
-      { name: 'Medications', category: 'Toiletries', quantity: 1 },
-      
-      // Miscellaneous
-      { name: 'Water Bottle', category: 'Miscellaneous', quantity: 1 },
-      { name: 'Day Bag/Backpack', category: 'Miscellaneous', quantity: 1 }
-    ];
+    // AI Decision Making for Clothing Based on Weather Patterns
+    const addClothingItems = () => {
+      // Base clothing calculations
+      const topsPerDay = weather.needsLayering ? 2 : 1;
+      const extraItems = Math.ceil(tripDays / 3); // Buffer for unexpected needs
 
-    // Add weather-based items
-    if (weatherData) {
-      const avgHigh = weatherData.reduce((sum, day) => sum + day.high, 0) / weatherData.length;
-      const avgLow = weatherData.reduce((sum, day) => sum + day.low, 0) / weatherData.length;
-      const hasRain = weatherData.some(day => day.conditions.includes('Rain'));
+      // Essential clothing with smart quantities
+      items.push(
+        { name: 'Underwear', category: 'Clothing', quantity: tripDays + 1 },
+        { name: 'Socks', category: 'Clothing', quantity: tripDays + 1 }
+      );
 
-      if (avgHigh > 75) {
-        baseItems.push(
-          { name: 'Sunscreen (SPF 30+)', category: 'Toiletries', quantity: 1 },
-          { name: 'Sunglasses', category: 'Accessories', quantity: 1 },
-          { name: 'Sun Hat', category: 'Accessories', quantity: 1 },
-          { name: 'Shorts', category: 'Clothing', quantity: Math.ceil(tripDays / 2) },
-          { name: 'Light T-shirts', category: 'Clothing', quantity: Math.ceil(tripDays / 2) },
-          { name: 'Sandals', category: 'Footwear', quantity: 1 }
-        );
-      }
-      
-      if (avgLow < 60) {
-        baseItems.push(
-          { name: 'Warm Jacket', category: 'Clothing', quantity: 1 },
-          { name: 'Sweaters/Hoodies', category: 'Clothing', quantity: 2 },
-          { name: 'Long Sleeve Shirts', category: 'Clothing', quantity: Math.ceil(tripDays / 2) },
-          { name: 'Thermal Underwear', category: 'Clothing', quantity: 1 },
-          { name: 'Warm Socks', category: 'Clothing', quantity: Math.ceil(tripDays / 2) }
+      if (weather.isHot) {
+        items.push(
+          { name: 'Breathable T-shirts', category: 'Clothing', quantity: tripDays },
+          { name: 'Lightweight Shorts', category: 'Clothing', quantity: Math.ceil(tripDays / 2) },
+          { name: 'Sun Protection Shirt', category: 'Clothing', quantity: 1 }
         );
       }
 
-      if (avgLow < 40) {
-        baseItems.push(
+      if (weather.isMild) {
+        items.push(
+          { name: 'Casual Shirts', category: 'Clothing', quantity: Math.ceil(tripDays * 0.7) },
+          { name: 'Light Sweater', category: 'Clothing', quantity: 1 },
+          { name: 'Comfortable Pants', category: 'Clothing', quantity: Math.ceil(tripDays / 3) }
+        );
+      }
+
+      if (weather.isCool || weather.needsLayering) {
+        items.push(
+          { name: 'Long Sleeve Shirts', category: 'Clothing', quantity: Math.ceil(tripDays * topsPerDay * 0.5) },
+          { name: 'Light Jacket', category: 'Clothing', quantity: 1 },
+          { name: 'Warm Sweater', category: 'Clothing', quantity: Math.ceil(tripDays / 3) }
+        );
+      }
+
+      if (weather.isCold) {
+        items.push(
+          { name: 'Warm Base Layer Set', category: 'Clothing', quantity: 2 },
           { name: 'Winter Coat', category: 'Clothing', quantity: 1 },
-          { name: 'Winter Gloves', category: 'Accessories', quantity: 1 },
-          { name: 'Winter Hat/Beanie', category: 'Accessories', quantity: 1 },
-          { name: 'Scarf', category: 'Accessories', quantity: 1 }
+          { name: 'Warm Hat', category: 'Accessories', quantity: 1 },
+          { name: 'Gloves', category: 'Accessories', quantity: 1 },
+          { name: 'Scarf', category: 'Accessories', quantity: 1 },
+          { name: 'Thermal Socks', category: 'Clothing', quantity: Math.ceil(tripDays / 2) }
         );
       }
+    };
 
-      if (hasRain) {
-        baseItems.push(
-          { name: 'Umbrella', category: 'Accessories', quantity: 1 },
-          { name: 'Rain Jacket/Windbreaker', category: 'Clothing', quantity: 1 },
-          { name: 'Waterproof Shoes', category: 'Footwear', quantity: 1 }
-        );
-      }
+    // AI Decision Making for Activities
+    const addActivityItems = () => {
+      activities.forEach(activity => {
+        const lowercaseActivity = activity.toLowerCase();
+        
+        // Smart activity-based additions
+        if (lowercaseActivity.includes('beach') || lowercaseActivity.includes('swim')) {
+          const beachDays = Math.ceil(tripDays / 3); // Assume not every day is a beach day
+          items.push(
+            { name: 'Swimsuit', category: 'Clothing', quantity: Math.min(2, beachDays) },
+            { name: 'Beach Towel', category: 'Accessories', quantity: 1 },
+            { name: 'Waterproof Phone Case', category: 'Accessories', quantity: 1 },
+            { name: 'Beach Bag', category: 'Accessories', quantity: 1 }
+          );
+          
+          if (weather.isHot) {
+            items.push(
+              { name: 'Extra Sunscreen', category: 'Toiletries', quantity: 1 },
+              { name: 'After-Sun Care', category: 'Toiletries', quantity: 1 }
+            );
+          }
+        }
+
+        if (lowercaseActivity.includes('hik')) {
+          const hikingDays = Math.ceil(tripDays / 3);
+          items.push(
+            { name: 'Hiking Boots', category: 'Footwear', quantity: 1 },
+            { name: 'Hiking Socks', category: 'Clothing', quantity: hikingDays + 1 },
+            { name: 'Moisture-Wicking Shirts', category: 'Clothing', quantity: hikingDays },
+            { name: 'Hiking Pants', category: 'Clothing', quantity: Math.ceil(hikingDays / 2) },
+            { name: 'First Aid Kit', category: 'Safety', quantity: 1 }
+          );
+
+          if (weather.hasRain) {
+            items.push(
+              { name: 'Waterproof Jacket', category: 'Clothing', quantity: 1 },
+              { name: 'Quick-Dry Pants', category: 'Clothing', quantity: 1 }
+            );
+          }
+        }
+
+        if (lowercaseActivity.includes('business')) {
+          const businessDays = Math.min(tripDays, 5); // Assume max 5 business days
+          items.push(
+            { name: 'Business Suits', category: 'Business Attire', quantity: Math.ceil(businessDays / 2) },
+            { name: 'Dress Shirts', category: 'Business Attire', quantity: businessDays },
+            { name: 'Dress Pants', category: 'Business Attire', quantity: Math.ceil(businessDays / 2) },
+            { name: 'Dress Shoes', category: 'Footwear', quantity: 1 },
+            { name: 'Professional Accessories', category: 'Business Items', quantity: 1 }
+          );
+
+          if (tripDays > 3) {
+            items.push(
+              { name: 'Portable Steamer', category: 'Business Items', quantity: 1 }
+            );
+          }
+        }
+
+        if (lowercaseActivity.includes('golf')) {
+          const golfDays = Math.ceil(tripDays / 3);
+          items.push(
+            { name: 'Golf Polo Shirts', category: 'Athletic Wear', quantity: golfDays },
+            { name: 'Golf Pants/Shorts', category: 'Athletic Wear', quantity: Math.ceil(golfDays / 2) },
+            { name: 'Golf Shoes', category: 'Footwear', quantity: 1 },
+            { name: 'Golf Glove', category: 'Equipment', quantity: 1 }
+          );
+
+          if (weather.isHot) {
+            items.push(
+              { name: 'Golf Hat/Visor', category: 'Accessories', quantity: 1 },
+              { name: 'Golf Towel', category: 'Equipment', quantity: 1 }
+            );
+          }
+        }
+      });
+    };
+
+    // Essential items based on trip duration
+    items.push(
+      { name: 'Passport/ID', category: 'Documents & Money', quantity: 1 },
+      { name: 'Phone + Charger', category: 'Electronics', quantity: 1 },
+      { name: 'Toiletry Basics', category: 'Toiletries', quantity: 1 }
+    );
+
+    // Add weather-appropriate clothing
+    addClothingItems();
+
+    // Add activity-specific items
+    addActivityItems();
+
+    // Weather-specific additions
+    if (weather.hasRain) {
+      items.push(
+        { name: 'Umbrella', category: 'Accessories', quantity: 1 },
+        { name: 'Rain Jacket', category: 'Clothing', quantity: 1 }
+      );
     }
 
-    // Add activity-based items
-    activities.forEach(activity => {
-      const lowercaseActivity = activity.toLowerCase();
-      
-      if (lowercaseActivity.includes('beach') || lowercaseActivity.includes('swim')) {
-        baseItems.push(
-          { name: 'Swimsuit', category: 'Clothing', quantity: 2 }, // Backup swimsuit
-          { name: 'Beach Towel', category: 'Accessories', quantity: 1 },
-          { name: 'Beach Bag', category: 'Accessories', quantity: 1 },
-          { name: 'Flip Flops', category: 'Footwear', quantity: 1 },
-          { name: 'Beach Cover-up', category: 'Clothing', quantity: 1 },
-          { name: 'Waterproof Phone Case', category: 'Accessories', quantity: 1 },
-          { name: 'After-Sun Lotion', category: 'Toiletries', quantity: 1 }
-        );
-      }
-      
-      if (lowercaseActivity.includes('hik')) {
-        baseItems.push(
-          { name: 'Hiking Boots', category: 'Footwear', quantity: 1 },
-          { name: 'Hiking Socks', category: 'Clothing', quantity: Math.ceil(tripDays / 2) },
-          { name: 'Moisture-Wicking Shirts', category: 'Clothing', quantity: Math.ceil(tripDays / 2) },
-          { name: 'Hiking Pants', category: 'Clothing', quantity: 2 },
-          { name: 'First Aid Kit', category: 'Miscellaneous', quantity: 1 },
-          { name: 'Insect Repellent', category: 'Toiletries', quantity: 1 },
-          { name: 'Hiking Backpack', category: 'Accessories', quantity: 1 },
-          { name: 'Trekking Poles', category: 'Equipment', quantity: 1 },
-          { name: 'Trail Map/GPS Device', category: 'Equipment', quantity: 1 }
-        );
-      }
-      
-      if (lowercaseActivity.includes('business')) {
-        baseItems.push(
-          { name: 'Business Suits', category: 'Business Attire', quantity: Math.min(3, Math.ceil(tripDays / 2)) },
-          { name: 'Dress Shirts', category: 'Business Attire', quantity: tripDays },
-          { name: 'Dress Pants', category: 'Business Attire', quantity: Math.min(3, Math.ceil(tripDays / 2)) },
-          { name: 'Sport Coat/Blazer', category: 'Business Attire', quantity: 1 },
-          { name: 'Ties', category: 'Business Attire', quantity: Math.min(3, tripDays) },
-          { name: 'Dress Shoes', category: 'Footwear', quantity: 1 },
-          { name: 'Dress Socks', category: 'Business Attire', quantity: tripDays },
-          { name: 'Belt', category: 'Accessories', quantity: 1 },
-          { name: 'Business Cards', category: 'Business Items', quantity: 1 },
-          { name: 'Laptop + Charger', category: 'Business Items', quantity: 1 },
-          { name: 'Notebook + Pen', category: 'Business Items', quantity: 1 }
-        );
-      }
+    if (tripDays > 7) {
+      items.push(
+        { name: 'Laundry Bag', category: 'Accessories', quantity: 1 },
+        { name: 'Travel Detergent', category: 'Toiletries', quantity: 1 }
+      );
+    }
 
-      if (lowercaseActivity.includes('gym') || lowercaseActivity.includes('workout')) {
-        baseItems.push(
-          { name: 'Workout Shirts', category: 'Athletic Wear', quantity: Math.ceil(tripDays / 2) },
-          { name: 'Workout Shorts/Pants', category: 'Athletic Wear', quantity: Math.ceil(tripDays / 2) },
-          { name: 'Athletic Socks', category: 'Athletic Wear', quantity: Math.ceil(tripDays / 2) },
-          { name: 'Athletic Shoes', category: 'Footwear', quantity: 1 },
-          { name: 'Gym Towel', category: 'Athletic Wear', quantity: 1 }
-        );
-      }
-    });
-
-    // Remove duplicates and combine quantities for same items
+    // Remove duplicates and optimize quantities
     const itemMap = new Map<string, PackingItem>();
-    baseItems.forEach(item => {
+    items.forEach(item => {
       const key = `${item.name}-${item.category}`;
       if (itemMap.has(key)) {
         const existingItem = itemMap.get(key)!;
@@ -496,16 +540,15 @@ const PackingApp: React.FC = () => {
 
               {activities.length === 0 && (
                 <p className="text-gray-500 text-center py-4">
-                  Add some activities to help us suggest what to pack!
+                  Add activities to get personalized packing suggestions, or click Next to skip.
                 </p>
               )}
 
               <button
                 className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 mt-4"
                 onClick={handleNextStep}
-                disabled={activities.length === 0}
               >
-                Next Step
+                {activities.length > 0 ? 'Next Step' : 'Skip Activities'}
               </button>
             </div>
           </div>
