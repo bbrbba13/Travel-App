@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Search, Activity, Plus, X, Thermometer, Luggage } from 'lucide-react';
+import { MapPin, Search, Activity, Plus, X, Thermometer, Luggage, ChevronRight, ChevronLeft } from 'lucide-react';
 
 // TypeScript interfaces
 interface MapboxFeature {
@@ -415,244 +415,311 @@ const PackingApp: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      <header className="px-4 py-4 bg-blue-600 text-white">
-        <h1 className="text-xl font-bold">PackAI - Smart Travel Packing</h1>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+      <header className="px-6 py-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-2xl font-bold">PackAI - Smart Travel Packing</h1>
+          <p className="text-blue-100 mt-1">Let AI plan your perfect packing list</p>
+        </div>
       </header>
 
-      <main className="flex-1 p-4 overflow-auto">
-        {currentStep === 1 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold flex items-center">
-              <MapPin className="mr-2" size={20} />
-              Trip Details
-            </h2>
-
-            <div className="space-y-3">
-              <div className="relative">
-                <label className="block text-sm font-medium text-gray-700">Destination</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    className="mt-1 block w-full p-2 pl-8 border border-gray-300 rounded-md"
-                    placeholder="City, Country"
-                    value={destination}
-                    onChange={handleDestinationChange}
-                    onFocus={() => destination.length >= 2 && setShowSuggestions(true)}
-                  />
-                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                </div>
-
-                {showSuggestions && (
-                  <div 
-                    ref={suggestionsRef}
-                    className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto"
-                  >
-                    {suggestions.length > 0 ? (
-                      suggestions.map((city, index) => (
-                        <div
-                          key={index}
-                          className="p-2 hover:bg-blue-50 cursor-pointer"
-                          onClick={() => selectSuggestion(city)}
-                        >
-                          {city}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-2 text-gray-500">
-                        {searchLoading ? 'Searching...' : 'No suggestions'}
-                      </div>
-                    )}
+      <main className="max-w-6xl mx-auto p-6">
+        {/* Progress Steps */}
+        <div className="mb-8 hidden sm:block">
+          <div className="flex items-center justify-between">
+            {[
+              { step: 1, title: 'Trip Details', icon: MapPin },
+              { step: 2, title: 'Activities', icon: Activity },
+              { step: 3, title: 'Weather', icon: Thermometer },
+              { step: 4, title: 'Packing List', icon: Luggage }
+            ].map(({ step, title, icon: Icon }) => (
+              <div key={step} className="flex-1 relative">
+                <div className={`flex flex-col items-center ${currentStep >= step ? 'text-blue-600' : 'text-gray-400'}`}>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    currentStep === step ? 'bg-blue-600 text-white' :
+                    currentStep > step ? 'bg-green-500 text-white' : 'bg-gray-200'
+                  }`}>
+                    <Icon size={20} />
                   </div>
+                  <span className="mt-2 text-sm font-medium">{title}</span>
+                </div>
+                {step < 4 && (
+                  <div className={`absolute top-5 left-1/2 w-full h-0.5 ${
+                    currentStep > step ? 'bg-green-500' : 'bg-gray-200'
+                  }`} />
                 )}
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Start Date</label>
-                <input
-                  type="date"
-                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">End Date</label>
-                <input
-                  type="date"
-                  className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
-              </div>
-
-              <button
-                className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700"
-                onClick={handleNextStep}
-                disabled={!destination || !startDate || !endDate}
-              >
-                Next Step
-              </button>
-            </div>
+            ))}
           </div>
-        )}
+        </div>
 
-        {currentStep === 2 && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold flex items-center">
-                <Activity className="mr-2" size={20} />
-                Planned Activities
-              </h2>
-              <button
-                onClick={handleBackStep}
-                className="text-blue-600 hover:text-blue-800"
-              >
-                Back
-              </button>
-            </div>
+        <div className="bg-white rounded-xl shadow-lg p-6 transition-all duration-500 transform hover:shadow-xl">
+          {currentStep === 1 && (
+            <div className="space-y-6">
+              <div className="flex items-center space-x-2">
+                <MapPin className="text-blue-600" size={24} />
+                <h2 className="text-xl font-semibold">Trip Details</h2>
+              </div>
 
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  className="flex-1 p-2 border border-gray-300 rounded-md"
-                  placeholder="Add an activity (e.g., Beach day, Hiking, Business meeting)"
-                  value={newActivity}
-                  onChange={(e) => setNewActivity(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                />
+              <div className="space-y-4">
+                <div className="relative">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Where are you heading?</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      placeholder="Enter city or country"
+                      value={destination}
+                      onChange={handleDestinationChange}
+                      onFocus={() => destination.length >= 2 && setShowSuggestions(true)}
+                    />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                  </div>
+
+                  {showSuggestions && (
+                    <div 
+                      ref={suggestionsRef}
+                      className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto"
+                    >
+                      {suggestions.length > 0 ? (
+                        suggestions.map((city, index) => (
+                          <div
+                            key={index}
+                            className="p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors"
+                            onClick={() => selectSuggestion(city)}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <MapPin size={16} className="text-gray-400" />
+                              <span>{city}</span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-3 text-gray-500 text-center">
+                          {searchLoading ? (
+                            <div className="flex items-center justify-center space-x-2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                              <span>Searching...</span>
+                            </div>
+                          ) : 'No suggestions'}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                    <input
+                      type="date"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                    <input
+                      type="date"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+
                 <button
-                  onClick={addActivity}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-                  disabled={!newActivity.trim()}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleNextStep}
+                  disabled={!destination || !startDate || !endDate}
                 >
-                  <Plus size={20} />
+                  <span>Continue to Activities</span>
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 2 && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Activity className="text-blue-600" size={24} />
+                  <h2 className="text-xl font-semibold">Planned Activities</h2>
+                </div>
+                <button
+                  onClick={handleBackStep}
+                  className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                  <ChevronLeft size={20} />
+                  <span>Back</span>
                 </button>
               </div>
 
-              <div className="space-y-2">
-                {activities.map((activity, index) => (
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    placeholder="What activities are you planning? (e.g., Beach day, Hiking)"
+                    value={newActivity}
+                    onChange={(e) => setNewActivity(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                  />
+                  <button
+                    onClick={addActivity}
+                    className="bg-blue-600 text-white px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center disabled:opacity-50"
+                    disabled={!newActivity.trim()}
+                  >
+                    <Plus size={24} />
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {activities.map((activity, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-all"
+                    >
+                      <span>{activity}</span>
+                      <button
+                        onClick={() => removeActivity(index)}
+                        className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded-full transition-all"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {activities.length === 0 && (
+                  <div className="text-center py-8 px-4 border-2 border-dashed border-gray-300 rounded-lg">
+                    <Activity size={32} className="mx-auto text-gray-400 mb-2" />
+                    <p className="text-gray-500">
+                      Add activities to get personalized packing suggestions, or continue to skip.
+                    </p>
+                  </div>
+                )}
+
+                <button
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 flex items-center justify-center space-x-2"
+                  onClick={handleNextStep}
+                >
+                  <span>{activities.length > 0 ? 'Continue to Weather' : 'Skip Activities'}</span>
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {currentStep === 3 && weatherData && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Thermometer className="text-blue-600" size={24} />
+                  <h2 className="text-xl font-semibold">Weather Forecast</h2>
+                </div>
+                <button
+                  onClick={handleBackStep}
+                  className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                  <ChevronLeft size={20} />
+                  <span>Back</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {weatherData.map((day, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-3 bg-white rounded-md border border-gray-200"
+                    className="p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-all hover:shadow-md"
                   >
-                    <span>{activity}</span>
-                    <button
-                      onClick={() => removeActivity(index)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <X size={16} />
-                    </button>
+                    <div className="font-medium text-lg text-blue-600">{day.date}</div>
+                    <div className="mt-2 text-gray-600">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-red-500">↑ {day.high}°F</span>
+                        <span className="text-blue-500">↓ {day.low}°F</span>
+                      </div>
+                      <div className="mt-1 flex items-center space-x-2">
+                        {day.conditions === 'Sunny' && '☀️'}
+                        {day.conditions === 'Partly Cloudy' && '⛅'}
+                        {day.conditions === 'Cloudy' && '☁️'}
+                        {day.conditions === 'Light Rain' && '🌧️'}
+                        <span>{day.conditions}</span>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
 
-              {activities.length === 0 && (
-                <p className="text-gray-500 text-center py-4">
-                  Add activities to get personalized packing suggestions, or click Next to skip.
-                </p>
-              )}
-
               <button
-                className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 mt-4"
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 flex items-center justify-center space-x-2"
                 onClick={handleNextStep}
               >
-                {activities.length > 0 ? 'Next Step' : 'Skip Activities'}
+                <span>Generate Packing List</span>
+                <ChevronRight size={20} />
               </button>
             </div>
-          </div>
-        )}
+          )}
 
-        {currentStep === 3 && weatherData && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold flex items-center">
-                <Thermometer className="mr-2" size={20} />
-                Weather Forecast
-              </h2>
-              <button
-                onClick={handleBackStep}
-                className="text-blue-600 hover:text-blue-800"
-              >
-                Back
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {weatherData.map((day, index) => (
-                <div
-                  key={index}
-                  className="p-4 bg-white rounded-lg border border-gray-200 space-y-2"
-                >
-                  <div className="font-medium">{day.date}</div>
-                  <div className="text-sm text-gray-600">
-                    High: {day.high}°F | Low: {day.low}°F
-                  </div>
-                  <div className="text-sm text-gray-600">{day.conditions}</div>
+          {currentStep === 4 && packingList.length > 0 && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Luggage className="text-blue-600" size={24} />
+                  <h2 className="text-xl font-semibold">Your Packing List</h2>
                 </div>
-              ))}
-            </div>
-
-            <button
-              className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 mt-4"
-              onClick={handleNextStep}
-            >
-              Generate Packing List
-            </button>
-          </div>
-        )}
-
-        {currentStep === 4 && packingList.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold flex items-center">
-                <Luggage className="mr-2" size={20} />
-                Packing List
-              </h2>
-              <div className="space-x-4">
                 <button
                   onClick={handleBackStep}
-                  className="text-blue-600 hover:text-blue-800"
+                  className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 transition-colors"
                 >
-                  Back
+                  <ChevronLeft size={20} />
+                  <span>Back</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {Array.from(new Set(packingList.map(item => item.category))).map(category => (
+                  <div key={category} className="space-y-2">
+                    <h3 className="font-medium text-lg text-gray-900 border-b border-gray-200 pb-2">{category}</h3>
+                    <div className="space-y-2">
+                      {packingList
+                        .filter(item => item.category === category)
+                        .map((item, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-all"
+                          >
+                            <span>{item.name}</span>
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-sm">
+                              Qty: {item.quantity}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-center pt-6">
+                <button
+                  onClick={handleReset}
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 flex items-center space-x-2"
+                >
+                  <Plus size={20} />
+                  <span>Create New Packing List</span>
                 </button>
               </div>
             </div>
-
-            <div className="space-y-6">
-              {Array.from(new Set(packingList.map(item => item.category))).map(category => (
-                <div key={category} className="space-y-2">
-                  <h3 className="font-medium text-gray-900">{category}</h3>
-                  <div className="space-y-2">
-                    {packingList
-                      .filter(item => item.category === category)
-                      .map((item, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-3 bg-white rounded-md border border-gray-200"
-                        >
-                          <span>{item.name}</span>
-                          <span className="text-gray-500">Qty: {item.quantity}</span>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-8 flex justify-center">
-              <button
-                onClick={handleReset}
-                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
-              >
-                Start New Packing List
-              </button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </main>
+
+      <footer className="mt-8 text-center text-gray-500 pb-6">
+        <p>Made with ❤️ by PackAI</p>
+      </footer>
     </div>
   );
 };
